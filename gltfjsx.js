@@ -6,39 +6,45 @@ const DracoLoader = require('./bin/dracoloader')
 THREE.DRACOLoader.getDecoderModule = () => {}
 const prettier = require('prettier')
 const isVarName = require('is-var-name')
+const clc = require("cli-color");
+
+// Lishan: CLC Mixins
+const error = clc.red.bold;
+const warn = clc.yellow;
+const notice = clc.blue;
 
 const options = {}
 
 function toArrayBuffer(buf) {
-  var ab = new ArrayBuffer(buf.length)
-  var view = new Uint8Array(ab)
-  for (var i = 0; i < buf.length; ++i) view[i] = buf[i]
-  return ab
+	var ab = new ArrayBuffer(buf.length)
+	var view = new Uint8Array(ab)
+	for (var i = 0; i < buf.length; ++i) view[i] = buf[i]
+	return ab
 }
 
 const gltfLoader = new THREE.GLTFLoader()
-gltfLoader.setDRACOLoader(new DracoLoader())
+	gltfLoader.setDRACOLoader(new DracoLoader())
 
 function rNbr(number) {
-  return parseFloat(number.toFixed(options.precision))
+	return parseFloat(number.toFixed(options.precision))
 }
 
 function rDeg(number) {
-  const eps = 0.001
-  const abs = Math.abs(Math.round(parseFloat(number) * 100000))
-  for (let i = 1; i <= 10; i++) {
-    if (abs === Math.round(parseFloat(Math.PI / i) * 100000))
-      return `${number < 0 ? '-' : ''}Math.PI${i > 1 ? ' / ' + i : ''}`
-  }
-  for (let i = 1; i <= 10; i++) {
-    if (abs === Math.round(parseFloat(Math.PI * i) * 100000))
-      return `${number < 0 ? '-' : ''}Math.PI${i > 1 ? ' * ' + i : ''}`
-  }
-  return rNbr(number)
+	const eps = 0.001
+	const abs = Math.abs(Math.round(parseFloat(number) * 100000))
+	for (let i = 1; i <= 10; i++) {
+		if (abs === Math.round(parseFloat(Math.PI / i) * 100000))
+		return `${number < 0 ? '-' : ''}Math.PI${i > 1 ? ' / ' + i : ''}`
+	}
+	for (let i = 1; i <= 10; i++) {
+		if (abs === Math.round(parseFloat(Math.PI * i) * 100000))
+		return `${number < 0 ? '-' : ''}Math.PI${i > 1 ? ' * ' + i : ''}`
+	}
+	return rNbr(number)
 }
 
 function sanitizeName(name) {
-  return isVarName(name) ? `.${name}` : `['${name}']`
+	return isVarName(name) ? `.${name}` : `['${name}']`
 }
 
 function printTypes(objects, animations) {
@@ -65,85 +71,104 @@ type GLTFActions = Record<ActionName, THREE.AnimationAction>;\n`
 }
 
 function print(objects, gltf, obj, level = 0, parent) {
-  // console.log(obj.name);
-  let result = ''
-  let space = new Array(level).fill(' ').join('')
-  let children = ''
-  let type = obj.type.charAt(0).toLowerCase() + obj.type.slice(1)
-  let node = 'nodes' + sanitizeName(obj.name)
+	// console.log(obj.name);
+	let result = ''
+	let space = new Array(level).fill(' ').join('')
+	let children = ''
+	let type = obj.type.charAt(0).toLowerCase() + obj.type.slice(1)
+	let node = 'nodes' + sanitizeName(obj.name)
 
-  console.log(new Array(level).fill().join(' ') + obj.name);
+	console.log(new Array(level).fill().join(' ') + obj.name);
 
-  // Turn object3d's into groups, it should be faster according to the threejs docs
-  if (type === 'object3D') type = 'group'
+	// Turn object3d's into groups, it should be faster according to the threejs docs
+	if (type === 'object3D') type = 'group'
 
-  // Bail out on lights and cameras
-  if (obj instanceof THREE.Light || obj instanceof THREE.Camera || obj instanceof THREE.Bone)
-    return `${space}<primitive object={${node}} />${!parent ? '' : '\n'}`
+	// Bail out on lights and cameras
+	if (obj instanceof THREE.Light || obj instanceof THREE.Camera || obj instanceof THREE.Bone)
+	return `${space}<primitive object={${node}} />${!parent ? '' : '\n'}`
 
-  // Collect children
-  if (obj.children) obj.children.forEach((child) => (children += print(objects, gltf, child, level + 2, obj)))
+	// Collect children
+	if (obj.children) obj.children.forEach((child) => (children += print(objects, gltf, child, level + 2, obj)))
   
 
-  // Lishan: If Name has Unit_
-  if(obj.name.includes('Unit_')) type = 'Unit'
+	// Lishan: If Name has Unit_
+	if(obj.name.includes('Unit_')) type = 'Unit';
 
-  // Lishan: If Name has NoEntry
-  if(obj.name.includes('NoEntry')) type = 'GrayArea'
+	// Lishan: If Name has NoEntry
+	if(obj.name.includes('NoEntry')) type = 'GrayArea';
 
-  // Lishan: If Name has Logo_
-  if(obj.name.includes('Logo_')) type = 'Logo'
-
-
-  // Form the object in JSX syntax
-  result = `${space}<${type} `
-
-  const oldResult = result
-
-  // Write out materials
-  // Lishan: Ignore if Units and Greay Area
-  if(type != 'Unit' && type != 'GrayArea'){
-    if (obj.material) {
-      if (obj.material.name) result += `material={materials${sanitizeName(obj.material.name)}} `
-      else result += `material={${node}.material} `
-    }
-  }
-
-  if (obj.geometry) result += `geometry={${node}.geometry} `
-  if (obj.skeleton) result += `skeleton={${node}.skeleton} `
-  if (obj.name.length && !options.compress) result += `name="${obj.name}" `
-  if (obj.visible === false) result += `visible={false} `
-  if (obj.morphTargetDictionary) result += `morphTargetDictionary={${node}.morphTargetDictionary} `
-  if (obj.morphTargetInfluences) result += `morphTargetInfluences={${node}.morphTargetInfluences} `
-  if (obj.position instanceof THREE.Vector3 && obj.position.length())
-    result += `position={[${rNbr(obj.position.x)}, ${rNbr(obj.position.y)}, ${rNbr(obj.position.z)},]} `
-  if (obj.rotation instanceof THREE.Euler && obj.rotation.toVector3().length())
-    result += `rotation={[${rDeg(obj.rotation.x)}, ${rDeg(obj.rotation.y)}, ${rDeg(obj.rotation.z)},]} `
-  if (obj.scale instanceof THREE.Vector3 && obj.scale.x !== 1 && obj.scale.y !== 1 && obj.scale.z !== 1)
-    result += `scale={[${rNbr(obj.scale.x)}, ${rNbr(obj.scale.y)}, ${rNbr(obj.scale.z)},]} `
+	// Lishan: If Name has Logo_
+	if(obj.name.includes('Logo_')) type = 'Logo';
 
 
-  // Lishan: Include Floor and GrayArea
-  if(obj.name.includes('Floor') || obj.name.includes('NoEntry')) result += `receiveShadow `;
+	// Form the object in JSX syntax
+	result = `${space}<${type} `
+
+	const oldResult = result
+
+	// Write out materials
+	// Lishan: Ignore if Units and Greay Area
+	if(type != 'Unit' && type != 'GrayArea'){
+		if (obj.material) {
+			if (obj.material.name) result += `material={materials${sanitizeName(obj.material.name)}} `
+			else result += `material={${node}.material} `
+		}
+	}
+
+	if (obj.geometry) result += `geometry={${node}.geometry} `
+	
+	if (obj.skeleton) result += `skeleton={${node}.skeleton} `;
+	
+	// Lishan: Print Correct Unit Name
+	if(type === 'Unit') result += `name="${obj.userData.name}" `;
+	else 
+		if (obj.name.length && !options.compress) result += `name="${obj.name}" `
+	
+	
+	if (obj.visible === false) result += `visible={false} `
+	
+	if (obj.morphTargetDictionary) result += `morphTargetDictionary={${node}.morphTargetDictionary} `
+	
+	if (obj.morphTargetInfluences) result += `morphTargetInfluences={${node}.morphTargetInfluences} `
+	
+	if (obj.position instanceof THREE.Vector3 && obj.position.length())
+		result += `position={[${rNbr(obj.position.x)}, ${rNbr(obj.position.y)}, ${rNbr(obj.position.z)},]} `
+	
+	if (obj.rotation instanceof THREE.Euler && obj.rotation.toVector3().length())
+		result += `rotation={[${rDeg(obj.rotation.x)}, ${rDeg(obj.rotation.y)}, ${rDeg(obj.rotation.z)},]} `
+	
+	if (obj.scale instanceof THREE.Vector3 && obj.scale.x !== 1 && obj.scale.y !== 1 && obj.scale.z !== 1)
+		result += `scale={[${rNbr(obj.scale.x)}, ${rNbr(obj.scale.y)}, ${rNbr(obj.scale.z)},]} `
+
+
+	// Lishan: If Logo Check for ConnectTo
+	if(obj.name.includes('Logo_')){
+		if(obj.userData.connectTo){
+			result +=`connectTo="${obj.userData.connectTo}"`
+		} else {
+			console.log(error('Logo do not have "connectTo" ' + obj.name));
+		}
+	}
+
+
+	// Lishan: Include Floor and GrayArea
+	if(obj.name.includes('Floor') || obj.name.includes('NoEntry')) result += `receiveShadow `;
 
 
 
-  // Remove empty groups
-  if (
-    options.compress &&
-    (type === 'group' || type === 'scene') &&
-    (result === oldResult || obj.children.length === 0)
-  ) {
-    obj.__removed = true
-    return children
-  }
+	// Remove empty groups
+	if (options.compress && (type === 'group' || type === 'scene') && (result === oldResult || obj.children.length === 0) ) {
+		obj.__removed = true
+		return children
+	}
 
-  // Close tag
-  result += `${children.length ? '>' : '/>'}\n`
+	// Close tag
+	result += `${children.length ? '>' : '/>'}\n`
 
-  // Add children and return
-  if (children.length) result += children + `${space}</${type}>${!parent ? '' : '\n'}`
-  return result
+	// Add children and return
+	if (children.length) result += children + `${space}</${type}>${!parent ? '' : '\n'}`;
+
+	return result
 }
 
 function printClips(gltf) {
@@ -182,13 +207,13 @@ function printAnimations(gltf, options) {
 }
 
 function parseExtras(extras) {
-  if (extras) {
-    return (
-      Object.keys(extras)
-        .map((key) => `${key}: ${extras[key]}`)
-        .join('\n') + '\n'
-    )
-  } else return ''
+	if (extras) {
+		return (
+			Object.keys(extras)
+				.map((key) => `${key}: ${extras[key]}`)
+				.join('\n') + '\n'
+		)
+	} else return ''
 }
 
 module.exports = function (file, nameExt, output, exportOptions) {

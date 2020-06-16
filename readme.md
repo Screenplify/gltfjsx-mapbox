@@ -13,6 +13,7 @@ See it in action here: https://twitter.com/0xca0a/status/1224335000755146753
 * Modified to Add Units, Floor, GreyArea
 * Remove material if type == Unit
 * Fix `nameExt` in `index.js` to have `file.replace(/^.*[\\\/]/, '')` 
+* Install cli-color for proper messages
 
 
 ## Usage
