@@ -93,12 +93,18 @@ function print(objects, gltf, obj, level = 0, parent) {
 
 	// Lishan: If Name has Unit_
 	if(obj.name.includes('Unit_')) type = 'Unit';
+	
+	// Lishan: If Name has Text_
+	if(obj.name.includes('Text_')) type = 'Label';
 
 	// Lishan: If Name has NoEntry
 	if(obj.name.includes('NoEntry')) type = 'GrayArea';
 
 	// Lishan: If Name has Logo_
 	if(obj.name.includes('Logo_')) type = 'Logo';
+
+	// Lishan: If Name has Icon_
+	if(obj.name.includes('Icon_') && !(obj.name.includes('Staircase') || obj.name.includes('Entrance'))) type = 'Icons';
 
 
 	// Form the object in JSX syntax
@@ -147,8 +153,14 @@ function print(objects, gltf, obj, level = 0, parent) {
 			result +=`connectTo="${obj.userData.connectTo}"`
 		} else {
 			console.log(error('Logo do not have "connectTo" ' + obj.name));
+			console.log(obj.userData);
+			console.log('-----')
 		}
 	}
+
+
+	// Dala hoorse, Lift, Escalaltor
+	if(obj.name.includes('DallaHorse') || obj.name.includes('Lift') || obj.name.includes('Escalator') || obj.name.includes('Icon_')) result += `castShadow `;
 
 
 	// Lishan: Include Floor and GrayArea
@@ -250,6 +262,8 @@ import { GLTFLoader${options.types ? ', GLTF' : ''} } from 'three/examples/jsm/l
 import Logo from '../Logo';
 import Unit from '../Unit';
 import GrayArea from '../GrayArea';
+import Label from '../Label';
+import Icons from '../Icons';
 import { useCountRenders } from '../../hooks/useCountRenders';
 
 ${options.types ? printTypes(objects, animations) : ''}
