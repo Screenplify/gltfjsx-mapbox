@@ -60,7 +60,7 @@ if (argv._[0]) {
 
 					const argvArray = [srcFile, destFile];
 
-					await gltfjsx(srcFile, glbFile, destFile, argvArray)
+					await gltfjsx(srcFile, glbFile, destFile, argv)
 						.then(() => console.log(success('\nConversion ['+glbFile+'] Done.')))
 						.catch((err) => console.log(error('\nConversion Failed.\n\n'), err))
 
