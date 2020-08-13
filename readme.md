@@ -19,6 +19,14 @@ See it in action here: https://twitter.com/0xca0a/status/1224335000755146753
 ## Usage
 
 ```bash
+ ## NEW METHOD
+ ## node .\index.js RUN 7.1 -c=false
+ $ node .\index.js RUN [Version from Nelly] [options]
+
+ ## eg:/ $ node .\index.js .\builds\Ground_3D_1.1.1.glb .\builds\Ground_3D_1.1.1.js -c=false
+```
+
+```bash
  ## $ npx gltfjsx model.gltf [Model.js] [options]
  ## New Command 
  $ node .\index.js model.gltf [Model.js] [options]
